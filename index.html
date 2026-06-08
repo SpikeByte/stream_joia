@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Joia TV - Premium Video Player</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
@@ -42,10 +42,11 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* Container do Player Dinâmico */
-        .player-container {
+        /* CONTAINER MASTER - Técnica de mascaramento para conter o player do Drive */
+        .player-wrapper {
             width: 100%;
             max-width: 1100px;
+            position: relative;
             background: #000;
             border-radius: 16px;
             overflow: hidden;
@@ -53,12 +54,50 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* Força o player nativo a ocupar o espaço correto com os controles embaixo */
-        video {
+        /* Mantém a proporção de cinema perfeita */
+        .player-container {
             width: 100%;
-            display: block;
-            max-height: 70vh;
-            background: #000;
+            position: relative;
+            padding-top: 56.25%; /* Proporção 16:9 */
+            overflow: hidden;
+        }
+
+        /* O SEGREDO DO MOBILE: Corta os controles deformados do topo criando uma área de escape oculta */
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        /* BARRA DE CONTROLES AUXILIAR EXTERNA - Garante avanço rápido e fluidez caso o player nativo suma no celular */
+        .custom-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .control-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
         }
 
         .playlist-container {
@@ -129,20 +168,27 @@
             .video-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
             .video-info { padding: 8px; }
             .video-title { font-size: 0.8rem; }
+            
+            /* Ajuste fino para forçar o iFrame a recalcular os botões internos no celular */
+            .player-container {
+                padding-top: 56.25%; 
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>CineDrive</h1>
+        <h1>Joia TV</h1>
     </header>
 
-    <div class="player-container">
-        <video id="videoPlayer" controls playsinline preload="metadata">
-            <source src="" type="video/mp4">
-            Seu navegador não suporta a tag de vídeo.
-        </video>
+    <div class="player-wrapper">
+        <div class="player-container">
+            <iframe id="videoPlayer" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+        </div>
+        <div class="custom-controls">
+            <button class="control-btn" onclick="refreshPlayer()">🔄 Recarregar Player</button>
+        </div>
     </div>
 
     <div class="playlist-container">
@@ -151,31 +197,35 @@
     </div>
 
     <script>
-        // O SEGREDO: Usamos a URL de drive.google.com/uc?export=download&confirm=t
-        // O parâmetro &confirm=t diz ao Google para ignorar o aviso de vírus e entregar o arquivo bruto.
+        // Retornamos ao formato seguro /preview para arquivos pesados (1.5GB+)
         const videosData = [
             {
                 id: "1",
                 title: "Episódio 3x01",
-                url: "https://docs.google.com/uc?export=download&confirm=t&id=1XSLwrLo0oOD3AN6dnx1rYaiW9TBkrfuk" 
+                url: "https://drive.google.com/file/d/1XSLwrLo0oOD3AN6dnx1rYaiW9TBkrfuk/preview" 
             },
             {
                 id: "2",
                 title: "Episódio 3x02 Em Breve...",
-                url: "https://docs.google.com/uc?export=download&confirm=t&id=ID_DO_SEGUNDO_VIDEO"
+                url: "https://drive.google.com/file/d/1_ID_DO_SEGUNDO_VIDEO/preview"
             }
         ];
 
         const videoGrid = document.getElementById('videoGrid');
-        const videoPlayer = document.getElementById('videoPlayer');
+        const iframePlayer = document.getElementById('videoPlayer');
 
         function loadVideo(videoUrl) {
-            videoPlayer.src = videoUrl;
-            videoPlayer.load();
-            videoPlayer.play().catch(error => {
-                console.log("Autoplay bloqueado pelo navegador, aguardando clique do usuário.");
-            });
+            iframePlayer.src = videoUrl;
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Função utilitária caso a rede falhe ao carregar o bloco de 1.5GB
+        function refreshPlayer() {
+            const currentSrc = iframePlayer.src;
+            iframePlayer.src = '';
+            setTimeout(() => {
+                iframePlayer.src = currentSrc;
+            }, 100);
         }
 
         function renderPlaylist() {
@@ -194,9 +244,9 @@
             });
         }
 
-        // Inicialização limpa
+        // Inicialização estável
         if(videosData.length > 0) {
-            videoPlayer.src = videosData[0].url;
+            iframePlayer.src = videosData[0].url;
         }
         
         renderPlaylist();
