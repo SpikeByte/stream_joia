@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JoiaFlix - Premium Video Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineDrive - Premium Video Player</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
@@ -42,11 +42,10 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* CORREÇÃO DA RESPONSIVIDADE: Container Dinâmico */
+        /* Container do Player Dinâmico */
         .player-container {
             width: 100%;
             max-width: 1100px;
-            aspect-ratio: 16 / 9; /* Força a proporção perfeita de cinema em qualquer tela */
             background: #000;
             border-radius: 16px;
             overflow: hidden;
@@ -54,11 +53,12 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .player-container iframe {
+        /* Força o player nativo a ocupar o espaço correto com os controles embaixo */
+        video {
             width: 100%;
-            height: 100%;
-            border: 0;
             display: block;
+            max-height: 70vh;
+            background: #000;
         }
 
         .playlist-container {
@@ -123,25 +123,12 @@
             text-overflow: ellipsis;
         }
 
-        /* Ajustes finos para telas de celular pequenas */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            header h1 {
-                font-size: 1.4rem;
-                text-align: center;
-            }
-            .video-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 12px;
-            }
-            .video-info {
-                padding: 8px;
-            }
-            .video-title {
-                font-size: 0.8rem;
-            }
+            body { padding: 10px; }
+            header h1 { font-size: 1.4rem; text-align: center; }
+            .video-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+            .video-info { padding: 8px; }
+            .video-title { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -152,7 +139,10 @@
     </header>
 
     <div class="player-container">
-        <iframe id="videoPlayer" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+        <video id="videoPlayer" controls playsinline preload="metadata">
+            <source src="" type="video/mp4">
+            Seu navegador não suporta a tag de vídeo.
+        </video>
     </div>
 
     <div class="playlist-container">
@@ -161,24 +151,30 @@
     </div>
 
     <script>
+        // O SEGREDO: Usamos a URL de drive.google.com/uc?export=download&confirm=t
+        // O parâmetro &confirm=t diz ao Google para ignorar o aviso de vírus e entregar o arquivo bruto.
         const videosData = [
             {
                 id: "1",
                 title: "Episódio 3x01",
-                url: "https://drive.google.com/file/d/1XSLwrLo0oOD3AN6dnx1rYaiW9TBkrfuk/managevideo?id=ID" 
+                url: "https://docs.google.com/uc?export=download&confirm=t&id=1XSLwrLo0oOD3AN6dnx1rYaiW9TBkrfuk" 
             },
             {
                 id: "2",
-                title: "Episódio 3x02 - Em Breve...",
-                url: "https://drive.google.com/file/d/1_ID_DO_SEGUNDO_VIDEO/preview"
+                title: "02. Design de Interface Avançado",
+                url: "https://docs.google.com/uc?export=download&confirm=t&id=ID_DO_SEGUNDO_VIDEO"
             }
         ];
 
         const videoGrid = document.getElementById('videoGrid');
-        const iframePlayer = document.getElementById('videoPlayer');
+        const videoPlayer = document.getElementById('videoPlayer');
 
         function loadVideo(videoUrl) {
-            iframePlayer.src = videoUrl;
+            videoPlayer.src = videoUrl;
+            videoPlayer.load();
+            videoPlayer.play().catch(error => {
+                console.log("Autoplay bloqueado pelo navegador, aguardando clique do usuário.");
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -198,8 +194,9 @@
             });
         }
 
+        // Inicialização limpa
         if(videosData.length > 0) {
-            iframePlayer.src = videosData[0].url;
+            videoPlayer.src = videosData[0].url;
         }
         
         renderPlaylist();
